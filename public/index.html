@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>ZO - TECH LAB demo</title>
+
+    <style type="text/css">
+        body {
+            font-family: sans-serif;
+        }
+
+        .main {
+            border: 1px solid black;
+            box-shadow: 10px 10px 5px #888;
+            border-radius: 12px;
+            padding: 20px;
+            background-color: #ddd;
+            margin: 25px;
+            width: 450px;
+            margin-left:auto;
+            margin-right:auto;
+        }
+
+        .logo {
+            width:275px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            padding: 15px;
+        }
+
+        .container {
+            -webkit-perspective: 300; perspective: 300;
+        }
+    </style>
+</head>
+
+<body>
+
+Received from an OSC app/device at : <div id="status"></div>
+
+<button onclick="socket.emit('message', '/bla/35', 127);">Send OSC message: /bla/35 127</button>
+<button onclick="socket.emit('message', '/bla/41', 127);">Send OSC message: /bla/41 127</button>
+<button onclick="socket.emit('message', '/bla', 12, 34);">Send OSC message: /bla 12 34</button>
+<button onclick="socket.emit('message', '/bla', 56, 78);">Send OSC message: /bla 56 78</button>
+<button onclick="socket.emit('message', '/bla');">Send OSC message: /bla</button>
+
+<div class="main">
+    <h2>Device Orientation</h2>
+    <table>
+        <tr>
+            <td>Event Supported</td>
+            <td id="doEvent"></td>
+        </tr>
+        <tr>
+            <td>Tilt Left/Right [gamma]</td>
+            <td id="doTiltLR"></td>
+        </tr>
+        <tr>
+            <td>Tilt Front/Back [beta]</td>
+            <td id="doTiltFB"></td>
+        </tr>
+        <tr>
+            <td>Direction [alpha]</td>
+            <td id="doDirection"></td>
+        </tr>
+    </table>
+</div>
+
+<div class="container" style="-webkit-perspective: 300; perspective: 300;">
+    <img src="html5_logo.png" id="imgLogo" class="logo">
+</div>
+
+
+</body>
+
+<script src="socket.io.js"></script>
+<script>
+    init();
+    var count = 0;
+
+    function init() {
+        if (window.DeviceOrientationEvent) {
+            document.getElementById("doEvent").innerHTML = "DeviceOrientation";
+            // Listen for the deviceorientation event and handle the raw data
+            window.addEventListener('deviceorientation', function(eventData) {
+                // gamma is the left-to-right tilt in degrees, where right is positive
+                var tiltLR = eventData.gamma;
+
+                // beta is the front-to-back tilt in degrees, where front is positive
+                var tiltFB = eventData.beta;
+
+                // alpha is the compass direction the device is facing in degrees
+                var dir = eventData.alpha
+
+                // call our orientation event handler
+                deviceOrientationHandler(tiltLR, tiltFB, dir);
+            }, false);
+        } else {
+            document.getElementById("doEvent").innerHTML = "Not supported on your device or browser.  Sorry."
+        }
+    }
+
+    function deviceOrientationHandler(tiltLR, tiltFB, dir) {
+        document.getElementById("doTiltLR").innerHTML = Math.round(tiltLR);
+        document.getElementById("doTiltFB").innerHTML = Math.round(tiltFB);
+        document.getElementById("doDirection").innerHTML = Math.round(dir);
+        socket.emit('message', '/accelerometer', Math.round(tiltLR), Math.round(tiltFB), Math.round(dir));
+        //socket.emit('message', '/accelerometer', 123);
+
+
+        // Apply the transform to the image
+        var logo = document.getElementById("imgLogo");
+        logo.style.webkitTransform = "rotate("+ tiltLR +"deg) rotate3d(1,0,0, "+ (tiltFB*-1)+"deg)";
+        logo.style.MozTransform = "rotate("+ tiltLR +"deg)";
+        logo.style.transform = "rotate("+ tiltLR +"deg) rotate3d(1,0,0, "+ (tiltFB*-1)+"deg)";
+    }
+
+    socket = io.connect('http://' + location.hostname, { port: 8081, rememberTransport: false});
+    socket.on('message', function(obj) {
+        var status = document.getElementById("status");
+        status.innerHTML = obj;
+    });
+</script>
+</html>

@@ -1,0 +1,24 @@
+#N canvas 891 353 450 300 10;
+#X obj 198 46 inlet;
+#X floatatom 198 150 5 0 0 0 - - -;
+#X symbolatom 246 149 10 0 0 0 - - -;
+#X obj 151 170 bng 15 250 50 0 empty empty bang -6 23 1 12 -262144
+-1 -1;
+#X obj 151 126 route bang float symbol list;
+#X obj 198 170 bng 15 250 50 0 empty empty float -4 23 1 12 -262144
+-1 -1;
+#X obj 246 170 bng 15 250 50 0 empty empty symbol -12 23 1 12 -262144
+-1 -1;
+#X obj 294 170 bng 15 250 50 0 empty empty list -2 23 1 12 -262144
+-1 -1;
+#X obj 342 170 bng 15 250 50 0 empty empty undefined -18 23 1 12 -262144
+-1 -1;
+#X text 138 207 [trigger]-style shortcuts don't work:;
+#X connect 0 0 4 0;
+#X connect 1 0 5 0;
+#X connect 2 0 6 0;
+#X connect 4 0 3 0;
+#X connect 4 1 1 0;
+#X connect 4 2 2 0;
+#X connect 4 3 7 0;
+#X connect 4 4 8 0;

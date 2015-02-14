@@ -1,0 +1,8 @@
+#N canvas 285 162 450 300 12;
+#X obj 187 194 outlet;
+#X obj 262 206 outlet;
+#X obj 345 203 outlet;
+#X obj 182 131 phone \$1;
+#X connect 3 0 0 0;
+#X connect 3 1 1 0;
+#X connect 3 2 2 0;

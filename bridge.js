@@ -40,8 +40,37 @@ function requestHandler(req, res) {
       console.log("Got error: " + e.message);
     });
   } else {
-    getFile((localFolder + fileName), res);
+    getFile(localFolder + fileName, res);
   }
 };
 
 http.createServer(requestHandler).listen(3000);
+
+'use strict';
+
+var os = require('os');
+var ifaces = os.networkInterfaces();
+var address;
+
+Object.keys(ifaces).forEach(function (ifname) {
+
+    ifaces[ifname].forEach(function (iface) {
+        if ('IPv4' !== iface.family || iface.internal !== false) {
+            // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+            return;
+        }
+
+        if (ifname == 'wlan0') {
+            console.log('webserver started at: ' + iface.address + ':3000');
+            address = iface.address + ':3000/qr.html';
+        }
+    });
+});
+
+var exec = require('child_process').exec;
+exec('firefox ' + address, function (error, stdout, stderr) {
+    //output is in stdout
+});
+exec('pd pd/start.pd', function (error, stdout, stderr) {
+    //output is in stdout
+});

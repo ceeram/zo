@@ -1,4 +1,4 @@
-#N canvas 849 384 742 503 12;
+#N canvas 843 394 742 503 12;
 #X floatatom 185 190 5 0 0 0 - - -;
 #X floatatom 245 190 5 0 0 0 - - -;
 #X floatatom 304 190 5 0 0 0 - - -;
@@ -23,9 +23,11 @@
 #X text -24 315 comment;
 #X obj 18 64 OSCroute /bla;
 #X obj 122 27 print;
-#X obj 645 105 radio;
+#X obj 604 96 radio;
 #X obj 604 132 print radio;
 #X obj 514 133 print numpad;
+#X msg 463 237 send /instrument/\$1 \$2;
+#X obj 543 302 loadbang;
 #X connect 3 0 0 0;
 #X connect 3 1 1 0;
 #X connect 3 2 2 0;
@@ -41,6 +43,10 @@
 #X connect 15 0 22 0;
 #X connect 15 0 3 0;
 #X connect 15 0 23 0;
+#X connect 16 0 27 0;
+#X connect 16 0 24 0;
 #X connect 17 0 4 0;
 #X connect 22 0 13 0;
 #X connect 24 0 25 0;
+#X connect 27 0 6 0;
+#X connect 28 0 14 0;

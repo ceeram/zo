@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>ZO - TECH LAB demo</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+    <style type="text/css">
+        body {
+            font-family: sans-serif;
+        }
+
+        .main {
+            border: 1px solid black;
+            box-shadow: 10px 10px 5px #888;
+            border-radius: 12px;
+            padding: 20px;
+            background-color: #ddd;
+            margin: 25px;
+            width: 450px;
+            margin-left:auto;
+            margin-right:auto;
+        }
+
+        .logo {
+            width:275px;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            padding: 15px;
+        }
+
+        .container {
+            -webkit-perspective: 300; perspective: 300;
+        }
+    </style>
+</head>
+
+<body>
+
+Received from an OSC app/device at : <div id="status"></div>
+
+<button onclick="socket.emit('message', '/bla/35', 127);">Send OSC message: /bla/35 127</button>
+<button onclick="socket.emit('message', '/bla/41', 127);">Send OSC message: /bla/41 127</button>
+<button onclick="socket.emit('message', '/bla', 12, 34);">Send OSC message: /bla 12 34</button>
+<button onclick="socket.emit('message', '/bla', 56, 78);">Send OSC message: /bla 56 78</button>
+<button onclick="socket.emit('message', '/bla');">Send OSC message: /bla</button>
+
+<div class="container">
+    <div class="main">
+        <h2>Device Orientation</h2>
+        <table>
+            <tr>
+                <td>Event Supported</td>
+                <td id="doEvent"></td>
+            </tr>
+            <tr>
+                <td>Tilt Left/Right [gamma]</td>
+                <td id="doTiltLR"></td>
+            </tr>
+            <tr>
+                <td>Tilt Front/Back [beta]</td>
+                <td id="doTiltFB"></td>
+            </tr>
+            <tr>
+                <td>Direction [alpha]</td>
+                <td id="doDirection"></td>
+            </tr>
+        </table>
+    </div>
+    <div id="qrcode"></div>
+    <div class="" style="-webkit-perspective: 300; perspective: 300;">
+        <img src="zo.jpg" id="imgLogo" class="logo">
+    </div>
+    <div id="picked">picked</div>
+    <div id="number">number</div>
+
+    <div class="row">
+        <div class="btn-group" role="group" aria-label="buttons">
+            <button type="button" class="btn btn-primary btn-lg" id="num1">1</button>
+            <button type="button" class="btn btn-primary btn-lg" id="num2">2</button>
+            <button type="button" class="btn btn-primary btn-lg" id="num3">3</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="btn-group" role="group" aria-label="buttons">
+            <button type="button" class="btn btn-primary btn-lg" id="num4">4</button>
+            <button type="button" class="btn btn-primary btn-lg" id="num5">5</button>
+            <button type="button" class="btn btn-primary btn-lg" id="num6">6</button>
+        </div>
+    </div>
+    <div class="row">
+        <div class="btn-group" role="group" aria-label="buttons">
+            <button type="button" class="btn btn-primary btn-lg" id="num7">7</button>
+            <button type="button" class="btn btn-primary btn-lg" id="num8">8</button>
+            <button type="button" class="btn btn-primary btn-lg" id="num9">9</button>
+        </div>
+    </div>
+
+</div>
+
+</body>
+<!-- Latest compiled and minified JavaScript -->
+<script src=" https://code.jquery.com/jquery-2.1.3.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+<script src="socket.io.js"></script>
+<script src="qrcode.min.js"></script>
+
+
+<script type="text/javascript">
+    new QRCode(document.getElementById("qrcode"), "http://" + window.location.hostname + ":3000");
+</script>
+
+<script>
+    init();
+    var picked = 0;
+
+    function init() {
+        if (window.DeviceOrientationEvent) {
+            document.getElementById("doEvent").innerHTML = "DeviceOrientation";
+            // Listen for the deviceorientation event and handle the raw data
+            window.addEventListener('deviceorientation', function(eventData) {
+                // gamma is the left-to-right tilt in degrees, where right is positive
+                var tiltLR = eventData.gamma;
+
+                // beta is the front-to-back tilt in degrees, where front is positive
+                var tiltFB = eventData.beta;
+
+                // alpha is the compass direction the device is facing in degrees
+                var dir = eventData.alpha
+
+                // call our orientation event handler
+                deviceOrientationHandler(tiltLR, tiltFB, dir);
+            }, false);
+        } else {
+            document.getElementById("doEvent").innerHTML = "Not supported on your device or browser.  Sorry."
+        }
+    }
+
+    function deviceOrientationHandler(tiltLR, tiltFB, dir) {
+        document.getElementById("doTiltLR").innerHTML = Math.round(tiltLR);
+        document.getElementById("doTiltFB").innerHTML = Math.round(tiltFB);
+        document.getElementById("doDirection").innerHTML = Math.round(dir);
+        socket.emit('message', '/accelerometer', Math.round(tiltLR), Math.round(tiltFB), Math.round(dir));
+        //socket.emit('message', '/accelerometer', 123);
+
+
+        // Apply the transform to the image
+        var logo = document.getElementById("imgLogo");
+        logo.style.webkitTransform = "rotate("+ tiltLR +"deg) rotate3d(1,0,0, "+ (tiltFB*-1)+"deg)";
+        logo.style.MozTransform = "rotate("+ tiltLR +"deg)";
+        logo.style.transform = "rotate("+ tiltLR +"deg) rotate3d(1,0,0, "+ (tiltFB*-1)+"deg)";
+    }
+
+    socket = io.connect('http://' + location.hostname, { port: 8081, rememberTransport: false});
+    socket.on('message', function(obj) {
+        var status = document.getElementById("status");
+        status.innerHTML = obj;
+        if (obj.search("/instrument/") == 0) {
+            toggleState(obj);
+        }
+    });
+
+    $(".btn").click(function() {
+        var instrument = $(this).text();
+        var value;
+        if ($(this).hasClass('active')) {
+            value = 0;
+            setPicked(0);
+        } else {
+            value = 127;
+            setPicked(instrument);
+        }
+        socket.emit('message', '/instrument/' + instrument, value);
+    });
+
+    $(".btn").click(someThing());
+
+    function someThing() {
+        console.log($(this).text());
+
+    }
+    function setPicked(instrument) {
+        picked = instrument;
+        var pick = document.getElementById("picked");
+        pick.innerHTML = instrument;
+    }
+
+    function toggleState(obj) {
+        var arr = obj.replace('/instrument/', '').split(' ');
+        var key = '#num' + arr.shift();
+        var value = arr.shift();
+        if (value == "127") {
+            $(key).addClass('active');
+        } else {
+            $(key).removeClass('active');
+        }
+        $('.btn').blur();
+
+    }
+
+    navigator.getUserMedia = ( navigator.getUserMedia ||
+    navigator.webkitGetUserMedia ||
+    navigator.mozGetUserMedia ||
+    navigator.msGetUserMedia);
+
+    if (navigator.getUserMedia) {
+        alert('yess getusermedia');
+        navigator.getUserMedia (
+
+                // constraints
+                {
+                    video: true,
+                    audio: true
+                },
+
+                // successCallback
+                function(localMediaStream) {
+                    var video = document.querySelector('video');
+                    video.src = window.URL.createObjectURL(localMediaStream);
+                    alert('started getusermedia');
+                    // Do something with the video here, e.g. video.play()
+                },
+
+                // errorCallback
+                function(err) {
+                    alert("The following error occured: " + err);
+                }
+        );
+    } else {
+        alert("getUserMedia not supported");
+    }
+</script>
+</html>

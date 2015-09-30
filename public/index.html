@@ -3,7 +3,11 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
     <title>ZO - TECH LAB demo</title>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
 
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
     <style type="text/css">
         body {
             font-family: sans-serif;
@@ -39,49 +43,25 @@
 
 Received from an OSC app/device at : <div id="status"></div>
 
-<button onclick="socket.emit('message', '/bla/35', 127);">Send OSC message: /bla/35 127</button>
-<button onclick="socket.emit('message', '/bla/41', 127);">Send OSC message: /bla/41 127</button>
-<button onclick="socket.emit('message', '/bla', 12, 34);">Send OSC message: /bla 12 34</button>
-<button onclick="socket.emit('message', '/bla', 56, 78);">Send OSC message: /bla 56 78</button>
-<button onclick="socket.emit('message', '/bla');">Send OSC message: /bla</button>
 
-<div class="main">
-    <h2>Device Orientation</h2>
-    <table>
-        <tr>
-            <td>Event Supported</td>
-            <td id="doEvent"></td>
-        </tr>
-        <tr>
-            <td>Tilt Left/Right [gamma]</td>
-            <td id="doTiltLR"></td>
-        </tr>
-        <tr>
-            <td>Tilt Front/Back [beta]</td>
-            <td id="doTiltFB"></td>
-        </tr>
-        <tr>
-            <td>Direction [alpha]</td>
-            <td id="doDirection"></td>
-        </tr>
-    </table>
+<div class="container">
+    <div class="" style="-webkit-perspective: 300; perspective: 300;">
+        <img src="zo.jpg" id="imgLogo" class="logo">
+    </div>
 </div>
-
-<div class="container" style="-webkit-perspective: 300; perspective: 300;">
-    <img src="html5_logo.png" id="imgLogo" class="logo">
-</div>
-
 
 </body>
-
+<!-- Latest compiled and minified JavaScript -->
+<script src=" https://code.jquery.com/jquery-2.1.3.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
 <script src="socket.io.js"></script>
 <script>
     init();
-    var count = 0;
+    var calibrate = false;
 
     function init() {
         if (window.DeviceOrientationEvent) {
-            document.getElementById("doEvent").innerHTML = "DeviceOrientation";
+
             // Listen for the deviceorientation event and handle the raw data
             window.addEventListener('deviceorientation', function(eventData) {
                 // gamma is the left-to-right tilt in degrees, where right is positive
@@ -91,22 +71,23 @@ Received from an OSC app/device at : <div id="status"></div>
                 var tiltFB = eventData.beta;
 
                 // alpha is the compass direction the device is facing in degrees
-                var dir = eventData.alpha
+                var dir = eventData.alpha;
+                if (calibrate === false) {
+                    calibrate = dir;//set initial value, this will be center
+                }
 
                 // call our orientation event handler
                 deviceOrientationHandler(tiltLR, tiltFB, dir);
             }, false);
         } else {
-            document.getElementById("doEvent").innerHTML = "Not supported on your device or browser.  Sorry."
+            alert('Not supported on your device or browser. Sorry.');
         }
     }
 
     function deviceOrientationHandler(tiltLR, tiltFB, dir) {
-        document.getElementById("doTiltLR").innerHTML = Math.round(tiltLR);
-        document.getElementById("doTiltFB").innerHTML = Math.round(tiltFB);
-        document.getElementById("doDirection").innerHTML = Math.round(dir);
-        socket.emit('message', '/accelerometer', Math.round(tiltLR), Math.round(tiltFB), Math.round(dir));
-        //socket.emit('message', '/accelerometer', 123);
+
+        socket.emit('message', '/accelerometer', calculateLR(tiltLR), calculateFB(tiltFB), calculateDir(dir));
+        //socket.emit('message', '/accelerometer', dir, output(real(dir)));
 
 
         // Apply the transform to the image
@@ -116,10 +97,55 @@ Received from an OSC app/device at : <div id="status"></div>
         logo.style.transform = "rotate("+ tiltLR +"deg) rotate3d(1,0,0, "+ (tiltFB*-1)+"deg)";
     }
 
+    //calculate filter, / = 1, -- = 0, \ = 1
+    function calculateLROE(tiltLR) {
+        return Math.abs((Math.abs(Math.abs(Math.abs(tiltLR)-90)-45)*2)-90)/90;
+    }
+
+    //calculate filter, / = 0, \ = 1
+    function calculateLR(tiltLR) {
+        return 1 - Math.abs(tiltLR)/90;
+        return Math.abs((Math.abs(Math.abs(Math.abs(tiltLR)-90)-45)*2)-90)/90;
+    }
+
+    //calculate volume, --- = 1, | = 0
+    function calculateFB(tiltFB) {
+        //return tiltFB;
+        return 1 - Math.abs(Math.abs(Math.abs(tiltFB)-90)-90)/90;
+        //return Math.round(tiltFB);
+    }
+
+    //calculate distortion
+    function calculateDir(real) {
+        real = real - calibrate;
+        if (real < 0) {
+            real = real + 360;
+        }
+
+        var ret;
+        switch(true) {
+            case 0<=real == real<90:
+                ret = real + 90;
+                break;
+            case 90<=real == real<180:
+                ret = 270 - real;
+                break;
+            case 180<=real == real<360:
+                ret = Math.abs(real - 270);
+                break;
+        }
+        return 1 - (ret / 180);
+    }
+
     socket = io.connect('http://' + location.hostname, { port: 8081, rememberTransport: false});
     socket.on('message', function(obj) {
         var status = document.getElementById("status");
         status.innerHTML = obj;
+        if (obj.search("/instrument/") == 0) {
+            toggleState(obj);
+        }
     });
+
+
 </script>
 </html>
